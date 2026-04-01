@@ -3,13 +3,24 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Crypto Trading Simulator API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: market
+    description: Market data
+  - name: trading
+    description: Trading operations
+  - name: portfolio
+    description: Portfolio management
+  - name: transactions
+    description: Transaction history
+
 paths:
   /healthz:
     get:
@@ -24,7 +35,175 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/google:
+    post:
+      operationId: authGoogle
+      tags: [auth]
+      summary: Google authentication
+      description: Authenticate with a Google ID token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleAuthRequest"
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /prices:
+    get:
+      operationId: getPrices
+      tags: [market]
+      summary: Get crypto prices
+      description: Fetch top 20 crypto prices from CoinGecko
+      responses:
+        "200":
+          description: List of crypto prices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CoinPrice"
+
+  /buy:
+    post:
+      operationId: buyCoin
+      tags: [trading]
+      summary: Buy cryptocurrency
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TradeRequest"
+      responses:
+        "200":
+          description: Trade executed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeResponse"
+        "400":
+          description: Insufficient funds or bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sell:
+    post:
+      operationId: sellCoin
+      tags: [trading]
+      summary: Sell cryptocurrency
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TradeRequest"
+      responses:
+        "200":
+          description: Trade executed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeResponse"
+        "400":
+          description: Insufficient holdings or bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portfolio:
+    get:
+      operationId: getPortfolio
+      tags: [portfolio]
+      summary: Get user portfolio
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User portfolio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Portfolio"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /transactions:
+    get:
+      operationId: getTransactions
+      tags: [transactions]
+      summary: Get transaction history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: number
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: number
+            default: 0
+      responses:
+        "200":
+          description: Transaction history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionsResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +213,235 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    GoogleAuthRequest:
+      type: object
+      properties:
+        idToken:
+          type: string
+          description: Google ID token from Expo AuthSession
+        userInfo:
+          type: object
+          properties:
+            id:
+              type: string
+            email:
+              type: string
+            name:
+              type: string
+            picture:
+              type: string
+          required:
+            - id
+            - email
+            - name
+      required:
+        - idToken
+        - userInfo
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserProfile"
+      required:
+        - token
+        - user
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+        balance:
+          type: number
+      required:
+        - id
+        - email
+        - name
+        - balance
+
+    CoinPrice:
+      type: object
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        name:
+          type: string
+        image:
+          type: string
+        currentPrice:
+          type: number
+        priceChange24h:
+          type: number
+        priceChangePercentage24h:
+          type: number
+        marketCap:
+          type: number
+        rank:
+          type: number
+      required:
+        - id
+        - symbol
+        - name
+        - image
+        - currentPrice
+        - priceChange24h
+        - priceChangePercentage24h
+        - marketCap
+        - rank
+
+    TradeRequest:
+      type: object
+      properties:
+        coinId:
+          type: string
+        coinSymbol:
+          type: string
+        coinName:
+          type: string
+        quantity:
+          type: number
+        price:
+          type: number
+      required:
+        - coinId
+        - coinSymbol
+        - coinName
+        - quantity
+        - price
+
+    TradeResponse:
+      type: object
+      properties:
+        transaction:
+          $ref: "#/components/schemas/TransactionItem"
+        newBalance:
+          type: number
+        message:
+          type: string
+      required:
+        - transaction
+        - newBalance
+        - message
+
+    TransactionItem:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        coinId:
+          type: string
+        coinSymbol:
+          type: string
+        coinName:
+          type: string
+        quantity:
+          type: number
+        price:
+          type: number
+        total:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - coinId
+        - coinSymbol
+        - coinName
+        - quantity
+        - price
+        - total
+        - createdAt
+
+    HoldingItem:
+      type: object
+      properties:
+        coinId:
+          type: string
+        coinSymbol:
+          type: string
+        coinName:
+          type: string
+        quantity:
+          type: number
+        avgBuyPrice:
+          type: number
+        currentPrice:
+          type: number
+        currentValue:
+          type: number
+        profitLoss:
+          type: number
+        profitLossPercent:
+          type: number
+      required:
+        - coinId
+        - coinSymbol
+        - coinName
+        - quantity
+        - avgBuyPrice
+        - currentPrice
+        - currentValue
+        - profitLoss
+        - profitLossPercent
+
+    Portfolio:
+      type: object
+      properties:
+        balance:
+          type: number
+        totalValue:
+          type: number
+        totalInvested:
+          type: number
+        totalProfitLoss:
+          type: number
+        totalProfitLossPercent:
+          type: number
+        holdings:
+          type: array
+          items:
+            $ref: "#/components/schemas/HoldingItem"
+      required:
+        - balance
+        - totalValue
+        - totalInvested
+        - totalProfitLoss
+        - totalProfitLossPercent
+        - holdings
+
+    TransactionsResponse:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionItem"
+        total:
+          type: number
+      required:
+        - transactions
+        - total

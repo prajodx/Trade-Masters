@@ -94,3 +94,38 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+
+### `artifacts/trading-app` (`@workspace/trading-app`)
+
+Expo React Native mobile app — Crypto Trading Simulator.
+
+- Dark theme with green-on-navy color palette (`#00c896` primary, `#090d14` background)
+- **Auth**: Google OAuth via `expo-auth-session`, plus one-tap "Demo Account" login. JWT tokens stored in AsyncStorage via `AuthContext`.
+- **5 screens**: Login, Market (top 20 coins), Portfolio (holdings + P&L), History (transactions), Coin Detail (with buy/sell modal)
+- **API**: Uses generated hooks from `@workspace/api-client-react`; base URL set via `EXPO_PUBLIC_DOMAIN`
+
+## Database Schema
+
+Tables: `users`, `holdings`, `transactions` — all in `lib/db/src/schema/`.
+
+- `users`: id, google_id, email, name, avatar, balance (decimal, starts at 100000)
+- `holdings`: (user_id, coin_id) composite PK, quantity, avg_buy_price
+- `transactions`: id, user_id, type (buy/sell), coin details, quantity, price, total
+
+## API Routes
+
+All routes served at `/api/`:
+
+- `GET /healthz` — health check
+- `POST /auth/google` — Google OAuth (or demo login) → JWT token
+- `GET /prices` — top 20 CoinGecko prices (30s server cache)
+- `POST /buy` — buy crypto (requires JWT)
+- `POST /sell` — sell crypto (requires JWT)
+- `GET /portfolio` — user holdings + P&L (requires JWT)
+- `GET /transactions` — trade history (requires JWT)
+
+## Environment Variables
+
+- `JWT_SECRET` — shared env var (128-char hex), used by api-server for JWT signing/verification
+- `EXPO_PUBLIC_DOMAIN` — Replit dev domain, used by trading-app to set base URL
+- `DATABASE_URL` — PostgreSQL connection (auto-provided by Replit)

@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface TradeRequest {
+  coinId: string;
+  coinSymbol: string;
+  coinName: string;
+  quantity: number;
+  price: number;
 }

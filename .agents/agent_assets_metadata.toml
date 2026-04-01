@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "ZGP7aWkI3vwzFKYVWWi2R"
+uri = "file://artifacts/trading-app/assets/images/icon.png"
+type = "image"
+title = "crypto trading app icon"

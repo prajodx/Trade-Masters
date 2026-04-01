@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "Crypto Trading Simulator"
+version = "1.0.0"
+id = "artifacts/trading-app"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 23641
+
+[services.development]
+run = "pnpm --filter @workspace/trading-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/trading-app", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/trading-app", "run", "serve" ]
+
+[services.env]
+PORT = "23641"
+BASE_PATH = "/"
