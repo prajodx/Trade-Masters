@@ -1,4 +1,7 @@
 {
+  "cli": {
+    "packageManager": "npm"
+  },
   "build": {
     "preview": {
       "android": {
