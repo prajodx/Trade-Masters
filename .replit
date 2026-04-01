@@ -28,5 +28,4 @@ timeoutMs = 20000
 [userenv]
 
 [userenv.shared]
-JWT_SECRET = "955c05d6b060c30c776679039e57d507375d529fea2d884b3483013275cba62a97ea6fd0f0d6557fd2e959115fef0a350568976d2fafd099709656a1daa1b436"
 EXPO_PUBLIC_DOMAIN = "2bdb2f1a-0dd7-42a9-8287-60c88dd39b60-00-16z1jxnu0jf5d.janeway.replit.dev"
