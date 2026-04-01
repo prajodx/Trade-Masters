@@ -11,5 +11,4 @@ export interface TradeRequest {
   coinSymbol: string;
   coinName: string;
   quantity: number;
-  price: number;
 }

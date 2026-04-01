@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { usersTable, holdingsTable, transactionsTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
+import { getPriceForCoin } from "./prices";
 
 const router: IRouter = Router();
 
@@ -14,20 +15,25 @@ router.post("/buy", requireAuth, async (req, res) => {
   const userId = req.user!.userId;
 
   try {
-    const { coinId, coinSymbol, coinName, quantity, price } = req.body as {
+    const { coinId, coinSymbol, coinName, quantity } = req.body as {
       coinId: string;
       coinSymbol: string;
       coinName: string;
       quantity: number;
-      price: number;
     };
 
-    if (!coinId || !coinSymbol || !coinName || !quantity || !price || quantity <= 0 || price <= 0) {
+    if (!coinId || !coinSymbol || !coinName || !quantity || quantity <= 0) {
       res.status(400).json({ error: "Invalid trade parameters" });
       return;
     }
 
-    const total = quantity * price;
+    const serverPrice = await getPriceForCoin(coinId);
+    if (serverPrice === null || serverPrice <= 0) {
+      res.status(400).json({ error: "Could not resolve current market price for this coin" });
+      return;
+    }
+
+    const total = quantity * serverPrice;
 
     const users = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     const user = users[0];
@@ -40,7 +46,7 @@ router.post("/buy", requireAuth, async (req, res) => {
     const currentBalance = parseFloat(user.balance);
 
     if (currentBalance < total) {
-      res.status(400).json({ error: "Insufficient funds" });
+      res.status(400).json({ error: `Insufficient funds. Required: $${total.toFixed(2)}, Available: $${currentBalance.toFixed(2)}` });
       return;
     }
 
@@ -62,11 +68,7 @@ router.post("/buy", requireAuth, async (req, res) => {
 
       await db
         .update(holdingsTable)
-        .set({
-          quantity: newQty.toString(),
-          avgBuyPrice: newAvg.toString(),
-          updatedAt: new Date(),
-        })
+        .set({ quantity: newQty.toString(), avgBuyPrice: newAvg.toString(), updatedAt: new Date() })
         .where(and(eq(holdingsTable.userId, userId), eq(holdingsTable.coinId, coinId)));
     } else {
       await db.insert(holdingsTable).values({
@@ -75,7 +77,7 @@ router.post("/buy", requireAuth, async (req, res) => {
         coinSymbol,
         coinName,
         quantity: quantity.toString(),
-        avgBuyPrice: price.toString(),
+        avgBuyPrice: serverPrice.toString(),
       });
     }
 
@@ -92,7 +94,7 @@ router.post("/buy", requireAuth, async (req, res) => {
         coinSymbol,
         coinName,
         quantity: quantity.toString(),
-        price: price.toString(),
+        price: serverPrice.toString(),
         total: total.toString(),
       })
       .returning();
@@ -112,7 +114,7 @@ router.post("/buy", requireAuth, async (req, res) => {
         createdAt: tx.createdAt.toISOString(),
       },
       newBalance,
-      message: `Successfully bought ${quantity} ${coinSymbol}`,
+      message: `Successfully bought ${quantity} ${coinSymbol} @ $${serverPrice.toFixed(2)}`,
     });
   } catch (err) {
     req.log.error({ err }, "Buy error");
@@ -124,20 +126,25 @@ router.post("/sell", requireAuth, async (req, res) => {
   const userId = req.user!.userId;
 
   try {
-    const { coinId, coinSymbol, coinName, quantity, price } = req.body as {
+    const { coinId, coinSymbol, coinName, quantity } = req.body as {
       coinId: string;
       coinSymbol: string;
       coinName: string;
       quantity: number;
-      price: number;
     };
 
-    if (!coinId || !coinSymbol || !coinName || !quantity || !price || quantity <= 0 || price <= 0) {
+    if (!coinId || !coinSymbol || !coinName || !quantity || quantity <= 0) {
       res.status(400).json({ error: "Invalid trade parameters" });
       return;
     }
 
-    const total = quantity * price;
+    const serverPrice = await getPriceForCoin(coinId);
+    if (serverPrice === null || serverPrice <= 0) {
+      res.status(400).json({ error: "Could not resolve current market price for this coin" });
+      return;
+    }
+
+    const total = quantity * serverPrice;
 
     const existingHoldings = await db
       .select()
@@ -186,7 +193,7 @@ router.post("/sell", requireAuth, async (req, res) => {
         coinSymbol,
         coinName,
         quantity: quantity.toString(),
-        price: price.toString(),
+        price: serverPrice.toString(),
         total: total.toString(),
       })
       .returning();
@@ -206,7 +213,7 @@ router.post("/sell", requireAuth, async (req, res) => {
         createdAt: tx.createdAt.toISOString(),
       },
       newBalance,
-      message: `Successfully sold ${quantity} ${coinSymbol}`,
+      message: `Successfully sold ${quantity} ${coinSymbol} @ $${serverPrice.toFixed(2)}`,
     });
   } catch (err) {
     req.log.error({ err }, "Sell error");

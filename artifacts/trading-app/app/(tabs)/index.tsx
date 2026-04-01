@@ -173,7 +173,7 @@ export default function MarketScreen() {
         renderItem={({ item }) => (
           <CoinRow
             coin={item}
-            onPress={() => router.push(`/coin/${item.id}` as any)}
+            onPress={() => router.push({ pathname: "/coin/[id]", params: { id: item.id } })}
           />
         )}
         ListHeaderComponent={renderHeader}

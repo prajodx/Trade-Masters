@@ -65,7 +65,6 @@ export const BuyCoinBody = zod.object({
   coinSymbol: zod.string(),
   coinName: zod.string(),
   quantity: zod.number(),
-  price: zod.number(),
 });
 
 export const BuyCoinResponse = zod.object({
@@ -92,7 +91,6 @@ export const SellCoinBody = zod.object({
   coinSymbol: zod.string(),
   coinName: zod.string(),
   quantity: zod.number(),
-  price: zod.number(),
 });
 
 export const SellCoinResponse = zod.object({
